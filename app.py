@@ -266,17 +266,27 @@ api_key = st.text_input("OpenAI API 키를 입력하세요:", type="password", h
 
 # AI 분석 버튼과 결과 표시
 if st.button("AI 분석 시작"):
-    if not custom_food or not api_key:
-        st.error("음식 이름과 API 키를 입력하세요.")
+    if not custom_food:
+        st.warning("음식 이름을 입력해주세요.")
+    elif not api_key:
+        st.warning("API 키를 입력해주세요.")
     else:
-        # OpenAI API 호출 및 결과 처리 로직 추가
-        openai = OpenAI(api_key=api_key)
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=f"Analyze the food: {custom_food}",
-            max_tokens=150
-        )
-        analysis_result = response.choices[0].text.strip()
-        st.subheader("AI 분석 결과")
-        st.write(analysis_result)
+        with st.spinner("AI 분석 중..."):
+            try:
+                # OpenAI API 호출
+                client = OpenAI(api_key=api_key)
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "당신은 음식 전문가입니다."},
+                        {"role": "user", "content": f"'{custom_food}'에 대해 맛, 영양, 조리법 측면에서 분석해주세요."}
+                    ],
+                    temperature=0.7
+                )
+                analysis_result = response.choices[0].message.content
+                st.success("분석이 완료되었습니다!")
+                st.subheader("AI 분석 결과")
+                st.write(analysis_result)
+            except Exception as e:
+                st.error(f"API 호출 중 오류가 발생했습니다: {str(e)}")
 
