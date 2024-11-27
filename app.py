@@ -278,15 +278,42 @@ if st.button("AI 분석 시작"):
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "system", "content": "당신은 음식 전문가입니다."},
-                        {"role": "user", "content": f"'{custom_food}'에 대해 맛, 영양, 조리법 측면에서 분석해주세요."}
+                        {"role": "system", "content": "당신은 음식 전문가입니다. 음식의 분석과 함께 대략적인 칼로리 정보도 제공해주세요."},
+                        {"role": "user", "content": f"'{custom_food}'에 대해 다음 정보를 제공해주세요:\n1. 맛과 특징\n2. 영양 성분\n3. 조리법 특징\n4. 1인분 기준 칼로리"}
                     ],
                     temperature=0.7
                 )
                 analysis_result = response.choices[0].message.content
-                st.success("분석이 완료되었습니다!")
-                st.subheader("AI 분석 결과")
-                st.write(analysis_result)
+                
+                # 칼로리 정보 추출 (정규식 사용)
+                import re
+                calories_match = re.search(r'(\d+)\s*kcal', analysis_result)
+                if calories_match:
+                    calories = int(calories_match.group(1))
+                    
+                    # 칼로리 정보 표시
+                    st.success("분석이 완료되었습니다!")
+                    st.subheader("AI 분석 결과")
+                    st.write(analysis_result)
+                    
+                    # 칼로리 프로그레스 바 표시
+                    st.subheader("🔥 칼로리 정보")
+                    progress = calories / DAILY_RECOMMENDED_CALORIES
+                    percentage = progress * 100
+                    
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        st.progress(progress)
+                    with col2:
+                        st.metric("섭취 칼로리", f"{calories}kcal")
+                    
+                    st.info(f'💡 일일 권장 칼로리 {DAILY_RECOMMENDED_CALORIES}kcal 기준, {custom_food}는 {percentage:.1f}%를 차지합니다.')
+                else:
+                    st.success("분석이 완료되었습니다!")
+                    st.subheader("AI 분석 결과")
+                    st.write(analysis_result)
+                    st.warning("칼로리 정보를 추출할 수 없습니다.")
+                    
             except Exception as e:
                 st.error(f"API 호출 중 오류가 발생했습니다: {str(e)}")
 
